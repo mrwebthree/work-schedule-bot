@@ -33,9 +33,9 @@ def generate_schedule(start_date, start_worker):
 
 def create_schedule_message():
     """Creates a formatted schedule message."""
-    message = f"📅 Work Schedule for {start_date.strftime('%B %Y')}\n\n"
+    message = f"📅 **Work Schedule for {start_date.strftime('%B %Y')}**\n\n"
     for date, worker in schedule.items():
-        message += f"{date}: {worker}\n"
+        message += f"📅 {date}: {worker}\n"
     return message
 
 # Generate initial schedule

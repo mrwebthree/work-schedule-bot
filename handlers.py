@@ -22,11 +22,11 @@ async def button_handler(update: Update, context: CallbackContext):
     query = update.callback_query
     await query.answer()
 
+    global start_date
     if query.data == "view_schedule":
         await query.edit_message_text(create_schedule_message(), reply_markup=main_menu_keyboard())
 
     elif query.data == "reschedule":
-        global start_date
         start_date = datetime.now()
         generate_schedule(start_date, current_worker)
-        await query.edit_message_text("✅ Schedule regenerated from today!\n\n" + create_schedule_message(), reply_markup=main_menu_keyboard())
+        await query.edit_message_text(f"✅ Schedule regenerated from {start_date.strftime('%Y-%m-%d')}!\n\n" + create_schedule_message(), reply_markup=main_menu_keyboard())
