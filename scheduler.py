@@ -1,47 +1,42 @@
-import calendar
+import json
 from datetime import datetime, timedelta
-from env_loader import START_DATE, START_WORKER
 
-# Worker rotation config
+CONFIG_FILE = "config.json"
 workers = ["Muhammadali", "Bunyod"]
-rotation_days = 3  # Default shift duration
 
-# State tracking
-start_date = datetime.strptime(START_DATE, "%Y-%m-%d")
-current_worker = START_WORKER
-schedule = {}
+def load_start_date():
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            data = json.load(f)
+        return datetime.strptime(data["start_date"], "%Y-%m-%d"), data["start_worker"]
+    except (FileNotFoundError, KeyError):
+        return None, None  # No start date set yet
 
-def generate_schedule(start_date, start_worker):
-    """Generates the work schedule from the given start date."""
-    global schedule, current_worker
-    year, month = start_date.year, start_date.month
-    _, total_days = calendar.monthrange(year, month)
+def set_start_date(date_str, worker_name):
+    with open(CONFIG_FILE, "w") as f:
+        json.dump({"start_date": date_str, "start_worker": worker_name}, f)
+
+def get_monthly_schedule():
+    start_date, start_worker = load_start_date()
+    if not start_date:
+        return "❌ Ish jadvali hali o'rnatilmagan! Iltimos, /start buyrug'ini ishlating."
+
+    today = datetime.today().date()
+    first_day = today.replace(day=1)
+    last_day = (first_day.replace(month=first_day.month + 1) - timedelta(days=1)).day
     
-    schedule = {}
-    current_worker = start_worker
+    schedule_text = "📅 Oylik ish jadvali:\n"
+    for day in range(1, last_day + 1):
+        date = first_day.replace(day=day)
+        days_since_start = (date - start_date.date()).days
+        worker_index = (days_since_start // 3) % 2
 
-    for day in range(1, total_days + 1):
-        date = datetime(year, month, day)
+        if start_worker == "Bunyod":
+            worker_index = 1 - worker_index  # Swap order if Bunyod started first
         
-        # Assign the worker even if it's before the start date
-        schedule[date.strftime("%Y-%m-%d")] = current_worker
-        
-        # Rotate worker after shift duration
-        if (date - start_date).days % rotation_days == rotation_days - 1:
-            current_worker = workers[1] if current_worker == workers[0] else workers[0]
+        if date < today:
+            schedule_text += f"✅ {date.strftime('%Y-%m-%d')}\n"
+        else:
+            schedule_text += f"➡️ {date.strftime('%Y-%m-%d')}: {workers[worker_index]}\n"
 
-def create_schedule_message():
-    """Creates a formatted schedule message."""
-    message = f"📅 Work Schedule for {start_date.strftime('%B %Y')}\n\n"
-    for date, worker in schedule.items():
-        message += f"{date}: {worker}\n"
-    return message
-
-def swap_shift(extra_days):
-    """Swaps the shift dynamically when both workers are working."""
-    global start_date
-    start_date = start_date + timedelta(days=extra_days)
-    generate_schedule(start_date, current_worker)
-
-# Generate initial schedule
-generate_schedule(start_date, current_worker)
+    return schedule_text

@@ -1,32 +1,22 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+import telebot.types
 from datetime import datetime, timedelta
 
-def main_menu_keyboard():
-    """Returns the main menu keyboard."""
-    keyboard = [
-        [InlineKeyboardButton("📅 View Schedule", callback_data="view_schedule")],
-        [InlineKeyboardButton("🔄 Swap Shift", callback_data="swap_shift")],
-        [InlineKeyboardButton("⚙️ Set Start Date & Worker", callback_data="set_start")]
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
-def shift_swap_keyboard():
-    """Returns a keyboard to choose extra workdays."""
-    keyboard = [
-        [InlineKeyboardButton("1 Day", callback_data="swap_1"), InlineKeyboardButton("2 Days", callback_data="swap_2")],
-        [InlineKeyboardButton("3 Days", callback_data="swap_3")]
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
-def start_shift_keyboard():
-    """Returns a keyboard to set a new start date and worker."""
+def generate_calendar():
     today = datetime.today()
-    dates = [(today + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(3)]
-    workers = ["Muhammadali", "Bunyod"]
+    markup = telebot.types.InlineKeyboardMarkup()
 
-    keyboard = []
-    for date in dates:
-        for worker in workers:
-            keyboard.append([InlineKeyboardButton(f"{date} - {worker}", callback_data=f"set_start_{date}_{worker}")])
-    
-    return InlineKeyboardMarkup(keyboard)
+    for week in range(0, 28, 7):  # Generate 4 weeks
+        row = []
+        for day_offset in range(7):
+            date = today + timedelta(days=week + day_offset)
+            date_str = date.strftime("%Y-%m-%d")
+            row.append(telebot.types.InlineKeyboardButton(date.strftime("%d"), callback_data=f"date_{date_str}"))
+        markup.row(*row)
+
+    return markup
+
+def schedule_keyboard():
+    keyboard = telebot.types.InlineKeyboardMarkup()
+    button = telebot.types.InlineKeyboardButton("📅 To'liq jadvalni ko'rish", callback_data="view_schedule")
+    keyboard.add(button)
+    return keyboard
