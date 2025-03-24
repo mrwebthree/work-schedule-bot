@@ -49,10 +49,37 @@ def handle_worker_selection(call):
 
     del user_states[call.message.chat.id]  # Clear user state
 
-@bot.callback_query_handler(func=lambda call: call.data == "view_schedule")
+@bot.callback_query_handler(func=lambda call: call.data.startswith("view_schedule"))
 def show_full_schedule(call):
-    schedule = get_monthly_schedule()
-    bot.send_message(call.message.chat.id, schedule, reply_markup=modify_schedule_keyboard())
+    print(f"Debug: Raw call.data = {call.data}")  # ✅ Logs raw input
+
+    # Fix: Correctly split into max 4 parts
+    parts = call.data.split("_", maxsplit=3)
+    print(f"Debug: Split parts = {parts}")  # ✅ Logs split parts
+
+    if len(parts) == 1:
+        from datetime import datetime
+        today = datetime.today()
+        year, month = today.year, today.month
+    elif len(parts) == 4:
+        try:
+            year, month = int(parts[2]), int(parts[3])  # Ensure int conversion
+        except ValueError:
+            print("Debug: ValueError occurred!")  # ✅ Logs error occurrence
+            bot.send_message(call.message.chat.id, "❌ Xatolik: Yil yoki oy noto‘g‘ri formatda.")
+            return
+    else:
+        print(f"Debug: Unexpected format - {parts}")  # ✅ Logs unexpected formats
+        bot.send_message(call.message.chat.id, "❌ Xatolik: Noto‘g‘ri format.")
+        return
+
+    print(f"Debug: Parsed year = {year}, month = {month}")  # ✅ Logs final parsed values
+
+    # Fetch schedule
+    schedule = get_monthly_schedule(year, month)
+    # Only edit the message if the content is actually different
+    if call.message.text != schedule:
+        bot.edit_message_text(schedule, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=schedule_keyboard(year, month))
 
 @bot.callback_query_handler(func=lambda call: call.data == "modify_schedule")
 def modify_schedule_prompt(call):
