@@ -2,7 +2,7 @@ import os
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from scheduler import set_start_date, get_monthly_schedule, modify_schedule
-from keyboards import schedule_keyboard, generate_calendar, modify_schedule_keyboard
+from keyboards import schedule_keyboard, generate_calendar
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -22,8 +22,10 @@ def handle_date_selection(call):
     user_states[call.message.chat.id] = {"date": date_str}
     
     worker_buttons = InlineKeyboardMarkup()
-    worker_buttons.add(InlineKeyboardButton("👤 Muhammadali", callback_data="worker_Muhammadali"))
-    worker_buttons.add(InlineKeyboardButton("👤 Bunyod", callback_data="worker_Bunyod"))
+    worker_buttons.add(
+        InlineKeyboardButton("👤 Muhammadali", callback_data="worker_Muhammadali"),
+        InlineKeyboardButton("👤 Bunyod", callback_data="worker_Bunyod")
+    )
 
     bot.edit_message_text(f"📅 Boshlanish sanasi: {date_str}\n👤 Birinchi ishchini tanlang:", 
                           chat_id=call.message.chat.id, 
@@ -51,35 +53,34 @@ def handle_worker_selection(call):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("view_schedule"))
 def show_full_schedule(call):
-    print(f"Debug: Raw call.data = {call.data}")  # ✅ Logs raw input
-
-    # Fix: Correctly split into max 4 parts
-    parts = call.data.split("_", maxsplit=3)
-    print(f"Debug: Split parts = {parts}")  # ✅ Logs split parts
-
+    parts = call.data.split("_")
+    
     if len(parts) == 1:
         from datetime import datetime
         today = datetime.today()
         year, month = today.year, today.month
     elif len(parts) == 4:
         try:
-            year, month = int(parts[2]), int(parts[3])  # Ensure int conversion
+            year, month = int(parts[2]), int(parts[3])
         except ValueError:
-            print("Debug: ValueError occurred!")  # ✅ Logs error occurrence
             bot.send_message(call.message.chat.id, "❌ Xatolik: Yil yoki oy noto‘g‘ri formatda.")
             return
     else:
-        print(f"Debug: Unexpected format - {parts}")  # ✅ Logs unexpected formats
         bot.send_message(call.message.chat.id, "❌ Xatolik: Noto‘g‘ri format.")
         return
 
-    print(f"Debug: Parsed year = {year}, month = {month}")  # ✅ Logs final parsed values
-
     # Fetch schedule
     schedule = get_monthly_schedule(year, month)
-    # Only edit the message if the content is actually different
-    if call.message.text != schedule:
+
+    if not schedule:
+        bot.send_message(call.message.chat.id, "📅 Bu oy uchun jadval mavjud emas.")
+        return
+
+    # ✅ Prevent "message is not modified" error
+    if call.message.text.strip() != schedule.strip():
         bot.edit_message_text(schedule, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=schedule_keyboard(year, month))
+    else:
+        bot.answer_callback_query(call.id, "📅 Jadval allaqachon yangilangan!", show_alert=False)
 
 @bot.callback_query_handler(func=lambda call: call.data == "modify_schedule")
 def modify_schedule_prompt(call):
@@ -91,8 +92,10 @@ def select_date_to_modify(call):
     user_states[call.message.chat.id] = {"modify_date": date_str}
 
     worker_buttons = InlineKeyboardMarkup()
-    worker_buttons.add(InlineKeyboardButton("👤 Muhammadali", callback_data="change_Muhammadali"))
-    worker_buttons.add(InlineKeyboardButton("👤 Bunyod", callback_data="change_Bunyod"))
+    worker_buttons.add(
+        InlineKeyboardButton("👤 Muhammadali", callback_data="change_Muhammadali"),
+        InlineKeyboardButton("👤 Bunyod", callback_data="change_Bunyod")
+    )
 
     bot.send_message(call.message.chat.id, f"📅 {date_str} sanasiga qaysi ishchini tayinlamoqchisiz?", reply_markup=worker_buttons)
 
@@ -115,3 +118,7 @@ def apply_schedule_change(call):
 if __name__ == "__main__":
     print("Bot ishga tushdi...")
     bot.polling(none_stop=True)
+
+@bot.message_handler(commands=['id'])
+def send_user_id(message):
+    bot.send_message(message.chat.id, f"Sizning Telegram ID raqamingiz: {message.chat.id}")
