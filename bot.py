@@ -27,7 +27,7 @@ def handle_date_selection(call):
         InlineKeyboardButton("👤 Bunyod", callback_data="worker_Bunyod")
     )
 
-    bot.edit_message_text(f"📅 Boshlanish sanasi: {date_str}\n👤 Birinchi ishchini tanlang:", 
+    bot.edit_message_text(f"📅 Boshlanish sanasi: {date_str}\n👤 Ishchini tanlang:", 
                           chat_id=call.message.chat.id, 
                           message_id=call.message.message_id, 
                           reply_markup=worker_buttons)
@@ -44,7 +44,7 @@ def handle_worker_selection(call):
     date_str = user_data["date"]
     set_start_date(date_str, worker_name)
 
-    bot.edit_message_text(f"✅ Ish jadvali saqlandi!\n📅 Boshlanish sanasi: {date_str}\n👤 Birinchi ishchi: {worker_name}\n\n📅 To'liq jadvalni ko'rish yoki o'zgartirish uchun quyidagi tugmalardan foydalaning:",
+    bot.edit_message_text(f"✅ Ish jadvali saqlandi!\n📅 Boshlanish sanasi: {date_str}\n👤 Ishchi: {worker_name}\n\n📅 To'liq jadvalni ko'rish yoki o'zgartirish uchun quyidagi tugmalardan foydalaning:",
                           chat_id=call.message.chat.id, 
                           message_id=call.message.message_id, 
                           reply_markup=schedule_keyboard())
