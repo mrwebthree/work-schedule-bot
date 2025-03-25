@@ -118,7 +118,3 @@ def apply_schedule_change(call):
 if __name__ == "__main__":
     print("Bot ishga tushdi...")
     bot.polling(none_stop=True)
-
-@bot.message_handler(commands=['id'])
-def send_user_id(message):
-    bot.send_message(message.chat.id, f"Sizning Telegram ID raqamingiz: {message.chat.id}")
